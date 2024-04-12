@@ -26,6 +26,7 @@ import org.kr.stocksmonitor.config.ConfigManager;
 import org.kr.stocksmonitor.polygon.NewsArticle;
 import org.kr.stocksmonitor.polygon.PolygonAPI;
 import org.kr.stocksmonitor.polygon.Ticker;
+import org.kr.stocksmonitor.utils.FileUtils;
 
 import java.io.IOException;
 import java.net.URL;
@@ -145,7 +146,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
     }
     
     public void shutdown() throws IOException {
-        if (!tickers.isEmpty()) Ticker.saveToFile(tickers);
+        if (!tickers.isEmpty()) FileUtils.saveToFile(tickers);
         updateApiKey();
         saveFavoriteTickers();
     }
@@ -463,7 +464,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
 
     public void loadTickers() {
         try {
-            tickers = Ticker.readFromFile();
+            tickers = FileUtils.readFromFile();
             loadAssetClassesCombobox();
         } catch (Exception e) {
             showErrorAlert();
