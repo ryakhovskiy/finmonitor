@@ -7,8 +7,11 @@ module org.kr.finmonitor {
     requires eu.hansolo.tilesfx;
     requires org.json;
     requires org.apache.commons.csv;
-    requires org.apache.commons.logging;
+    requires java.net.http;
     requires org.apache.commons.configuration2;
+    requires org.apache.httpcomponents.httpclient;
+    requires org.apache.httpcomponents.httpcore;
+    requires org.apache.logging.log4j;
 
     opens org.kr.stocksmonitor to javafx.fxml;
     exports org.kr.stocksmonitor;

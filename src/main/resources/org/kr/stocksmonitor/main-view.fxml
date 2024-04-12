@@ -33,7 +33,7 @@
                               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                   <children>
                                       <Label layoutX="14.0" layoutY="14.0" text="Asset Class" AnchorPane.leftAnchor="14.0" AnchorPane.topAnchor="14.0" />
-                                      <ChoiceBox id="cbxAssetClass" fx:id="cbxAssetClass" layoutX="86.0" layoutY="10.0" onAction="#cbxAssetClassChanged" prefHeight="25.0" prefWidth="201.0" AnchorPane.leftAnchor="86.0" AnchorPane.topAnchor="10.0">
+                                      <ChoiceBox id="cbxAssetClass" fx:id="cbxAssetClass" layoutX="86.0" layoutY="10.0" onAction="#handleCbxAssetClassChanged" prefHeight="25.0" prefWidth="201.0" AnchorPane.leftAnchor="86.0" AnchorPane.topAnchor="10.0">
                                           <items>
                                               <FXCollections fx:factory="observableArrayList">
                                                   <String fx:value="stocks" />

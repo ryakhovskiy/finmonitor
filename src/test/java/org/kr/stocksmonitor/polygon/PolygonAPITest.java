@@ -1,138 +1,118 @@
 package org.kr.stocksmonitor.polygon;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
+import org.kr.stocksmonitor.exceptions.RestCallException;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class PolygonAPITest {
 
-    private static final Log logger = LogFactory.getLog(PolygonAPITest.class);
+    private static final Logger logger = LogManager.getLogger(PolygonAPITest.class);
 
-    PolygonAPI api = new PolygonAPI();
+    private final PolygonAPI api = new PolygonAPI();
 
     @Test
-    void loadTickerTypesStocks() {
+    void testLoadTickerTypesStocks() {
+        logger.info("testLoadTickerTypesStocks");
         try {
             List<TickerType> types = api.loadTickerTypes("stocks");
             assertNotNull(types);
             assertEquals(24, types.size());
-        } catch (IOException e) {
+        } catch (RestCallException e) {
             logger.error(e);
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    void loadTickerTypesStocksNoParam() {
-        try {
-            List<TickerType> types = api.loadTickerTypes();
-            assertNotNull(types);
-            assertEquals(24, types.size());
-        } catch (IOException e) {
-            logger.error(e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Test
-    void loadTickerTypesIndicies() {
+    void testLoadTickerTypesIndicies() {
+        logger.info("testLoadTickerTypesIndicies");
         try {
             List<TickerType> types = api.loadTickerTypes("indicies");
             assertNotNull(types);
             assertEquals(0, types.size());
-        } catch (IOException e) {
+        } catch (RestCallException e) {
             logger.error(e);
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    void loadTickerTypesOptions() {
+    void testLoadTickerTypesOptions() {
+        logger.info("testLoadTickerTypesOptions");
         try {
             List<TickerType> types = api.loadTickerTypes("options");
             assertNotNull(types);
             assertEquals(0, types.size());
-        } catch (IOException e) {
+        } catch (RestCallException e) {
             logger.error(e);
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    void loadTickerTypesCrypto() {
+    void testLoadTickerTypesCrypto() {
+        logger.info("testLoadTickerTypesCrypto");
         try {
             List<TickerType> types = api.loadTickerTypes("crypto");
             assertNotNull(types);
             assertEquals(0, types.size());
-        } catch (IOException e) {
+        } catch (RestCallException e) {
             logger.error(e);
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    void loadTickerTypesFX() {
+    void testLoadTickerTypesFX() {
+        logger.info("testLoadTickerTypesFX");
         try {
             List<TickerType> types = api.loadTickerTypes("fx");
             assertNotNull(types);
             assertEquals(0, types.size());
-        } catch (IOException e) {
+        } catch (RestCallException e) {
             logger.error(e);
             throw new RuntimeException(e);
-        }
-    }
-
-    @Test
-    void loadAllTickers() {
-        try {
-            List<TickerType> types = api.loadTickerTypes("stocks");
-            for (TickerType t : types) {
-                List<Ticker> tickers = api.getTickersInfo(t.getAssetClass(), t.getCode());
-                saveTickers(t.getAssetClass() + "_" + t.getCode(), tickers);
-            }
-        } catch (IOException e) {
-            logger.error(e);
-        }
-    }
-
-    private void saveTickers(String name, List<Ticker> tickers) {
-
-        String csvFilePath = name + ".csv";
-        try (CSVPrinter printer = new CSVPrinter(new FileWriter(csvFilePath), CSVFormat.EXCEL.withHeader(
-                "Ticker", "Name", "Market", "Locale", "PrimaryExchange", "Type", "Active", "CurrencyName",
-                "CIK", "CompositeFigi", "ShareClassFigi", "LastUpdatedUtc"))) {
-
-            for (Ticker ticker : tickers) {
-                printer.printRecord(ticker.getTicker(), ticker.getName(), ticker.getMarket(), ticker.getType());
-            }
-
-            System.out.println("Tickers saved to " + csvFilePath);
-        } catch (IOException e) {
-            logger.error(e);
-
         }
     }
 
     @Test
     public void testNewsApi() {
         Ticker t = new Ticker("AAPL", "Apple Inc.", "stocks", "FUND");
-        LocalDate startDate = LocalDate.now().minusDays(3);
+        LocalDate startDate = LocalDate.now().minusMonths(3);
         LocalDate endDate = LocalDate.now();
         try {
             List<NewsArticle> news = api.getTickerNews(t, startDate, endDate);
+
+            //hopefully there were some news about Apple in the last 3 months...
             assertNotEquals(0, news.size());
-        } catch (IOException e) {
+        } catch (RestCallException e) {
             logger.error(e);
             throw new RuntimeException(e);
         }
     }
+
+//    @Test
+//    public void testMalformedParameter() {
+//        final String malformedParameterKey = "published_utc.gte=";
+//        final List<NameValuePair > parameters = Arrays.asList(
+//                new BasicNameValuePair(malformedParameterKey, "2024-04-12"),
+//                new BasicNameValuePair("published_utc.lte", "2024-04-12"),
+//                new BasicNameValuePair("ticker", "APPL"),
+//                new BasicNameValuePair("limit", "1000"),
+//                new BasicNameValuePair("sort", "published_utc")
+//        );
+//
+//        assertThrows(RestCallException.class, () -> {
+//            api.getTickerNews(parameters);
+//        });
+//    }
 }

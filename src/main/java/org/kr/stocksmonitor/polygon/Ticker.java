@@ -1,15 +1,13 @@
 package org.kr.stocksmonitor.polygon;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class Ticker implements Serializable {
-    private static final Log logger = LogFactory.getLog(Ticker.class);
+    private static final Logger logger = LogManager.getLogger(Ticker.class);
 
     @Serial
     private static final long serialVersionUID = 1L;

@@ -5,15 +5,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 
 
 public class StocksMonitor extends Application {
 
-    private static final Log logger = LogFactory.getLog(StocksMonitor.class);
+    private static final Logger logger = LogManager.getLogger(StocksMonitor.class);
     private StocksMonitorController controller;
 
     @Override

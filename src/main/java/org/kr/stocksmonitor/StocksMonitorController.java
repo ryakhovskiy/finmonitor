@@ -20,13 +20,15 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.kr.stocksmonitor.config.ConfigManager;
+import org.kr.stocksmonitor.exceptions.RestCallException;
 import org.kr.stocksmonitor.polygon.NewsArticle;
 import org.kr.stocksmonitor.polygon.PolygonAPI;
 import org.kr.stocksmonitor.polygon.Ticker;
 import org.kr.stocksmonitor.utils.FileUtils;
+import org.kr.stocksmonitor.utils.LogUtils;
 
 import java.io.IOException;
 import java.net.URL;
@@ -39,13 +41,15 @@ import java.util.stream.Collectors;
 
 public class StocksMonitorController implements Initializable, PolygonAPI.ProgressCallback {
 
-    private static final Log logger = LogFactory.getLog(StocksMonitorController.class);
+    private static final Logger logger = LogManager.getLogger(StocksMonitorController.class);
 
     private final PolygonAPI api = new PolygonAPI();
     @FXML public TabPane tabPaneData;
 
     private String lastSelectedAsset = "";
-    private Map<String, Map<String, List<Ticker>>> tickers = new HashMap<>();
+    private Set<Ticker> tickers = new HashSet<>();
+    private final Set<String> assetClasses = new HashSet<>();
+    private final Map<String, Set<String>> tickerTypesPerAssetClass = new HashMap<>();
 
     private HostServices hostServices;
 
@@ -101,7 +105,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
         for (Ticker t : tickers) {
             try {
                 news.addAll(api.getTickerNews(t, start, end));
-            } catch (IOException e) {
+            } catch (RestCallException e) {
                 logger.error(e);
             }
         }
@@ -136,7 +140,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
         });
         cbxTicker.setSkin(skin);
 
-        cbxTicker.valueProperty().addListener((observable, oldValue, newValue) -> {
+        cbxTicker.valueProperty().addListener((_, _, newValue) -> {
             if (!(newValue instanceof Ticker))
                 return;
             var items = tblTickers.getItems();
@@ -146,6 +150,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
     }
     
     public void shutdown() throws IOException {
+        logger.debug("shutting down the controller");
         if (!tickers.isEmpty()) FileUtils.saveToFile(tickers);
         updateApiKey();
         saveFavoriteTickers();
@@ -159,17 +164,9 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
     private void loadFavoriteTickers() {
         logger.debug("loading favorite tickers...");
         List<String> favoriteTickerSymbols = ConfigManager.getInstance().readFavoriteTickerSymbols();
-        var favoriteTickers = filterTickersBySymbols(favoriteTickerSymbols, tickers);
-        logger.debug("adding favorite tickers to the table: " + favoriteTickerSymbols + "; " + favoriteTickers);
+        var favoriteTickers = tickers.stream().filter(t -> favoriteTickerSymbols.contains(t.getTicker())).toList();
+        logger.debug("adding favorite tickers to the table: {}; {}", favoriteTickerSymbols, favoriteTickers);
         tblTickers.getItems().addAll(favoriteTickers);
-    }
-
-    private List<Ticker> filterTickersBySymbols(List<String> symbols, Map<String, Map<String, List<Ticker>>> tickers) {
-        return tickers.values().stream() // Stream over the inner maps
-                .flatMap(innerMap -> innerMap.values().stream()) // Flatten the values to get a stream of lists of Tickers
-                .flatMap(List::stream) // Flatten the lists to get a stream of Tickers
-                .filter(ticker -> symbols.contains(ticker.getTicker())) // Filter Tickers based on symbol property
-                .collect(Collectors.toList()); // Collect the filtered Tickers into a list
     }
 
     private void setDatePickersBasedOnSlider() {
@@ -362,20 +359,37 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
     }
 
     @FXML
-    protected void cbxAssetClassChanged() {
-        String assetClass = cbxAssetClass.getSelectionModel().getSelectedItem().toString();
+    protected void handleCbxAssetClassChanged() {
+        Instant start = Instant.now();
+        String assetClass = cbxAssetClass.getSelectionModel().getSelectedItem();
         if (assetClass.equals(lastSelectedAsset)) return;
         lastSelectedAsset = assetClass;
         cbxTickerType.getItems().clear();
-        Map<String, List<Ticker>> tickerTypes = tickers.get(assetClass);
-        if (null == tickerTypes) {
-            showAlert("Error", "No ticker types found for: " + assetClass,
-                    "Try to reload tickers on the Tab Settings. Available Asset Classes: " +
-                            String.join(", ", tickers.keySet()));
-            return;
-        }
-        cbxTickerType.getItems().addAll(tickerTypes.keySet());
+
+        if (tickerTypesPerAssetClass.isEmpty())
+            loadMarketTickerTypes(tickers);
+
+        cbxTickerType.getItems().addAll(tickerTypesPerAssetClass.getOrDefault(assetClass, Collections.emptySet()));
         reloadTickerCombobox();
+        LogUtils.debugDuration(logger, start, "handleCbxAssetClassChanged");
+    }
+
+    private void loadMarketTickerTypes(Set<Ticker> tickers) {
+        Instant start = Instant.now();
+        synchronized (tickerTypesPerAssetClass) {
+            if (!tickerTypesPerAssetClass.isEmpty()) return;
+            for (Ticker t : tickers) {
+                var set = tickerTypesPerAssetClass.get(t.getMarket());
+                if (null == set) {
+                    set = new HashSet<>();
+                    set.add(t.getType());
+                    tickerTypesPerAssetClass.put(t.getMarket(), set);
+                } else {
+                    set.add(t.getType());
+                }
+            }
+        }
+        LogUtils.debugDuration(logger, start, "forming the map tickerTypesPerAssetClass");
     }
 
     @FXML
@@ -384,6 +398,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
     }
 
     private void reloadTickerCombobox() {
+        Instant start = Instant.now();
         String assetClass = cbxAssetClass.getSelectionModel().getSelectedItem().toString();
 
         Object objTickerType = cbxTickerType.getSelectionModel().getSelectedItem();
@@ -391,24 +406,24 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
 
         List<Ticker> data;
         if (tickerType.isEmpty()) {
-            data = tickers.getOrDefault(assetClass, Collections.emptyMap())
-                    .values()
-                    .stream()
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toList());
+            //load all tickers for this asset class
+            data = tickers.stream().filter(t -> t.getMarket().equals(assetClass)).toList();
         } else {
-            data = tickers.getOrDefault(assetClass, Collections.emptyMap())
-                    .getOrDefault(tickerType, Collections.emptyList());
+            //load tickers for this asset class and this particular ticker type
+            data = tickers.stream().filter(t -> t.getMarket().equals(assetClass) && t.getType().equals(tickerType)).toList();
         }
+
         if (data.isEmpty()) return;
 
         ObservableList<Ticker> observableList = FXCollections.observableArrayList(data);
         FilteredList<Ticker> filteredData = new FilteredList<>(observableList);
         cbxTicker.setItems(filteredData);
         updateTickerCombobox(filteredData);
+        LogUtils.debugDuration(logger, start, "reloadTickerCombobox");
     }
 
     private void updateTickerCombobox(FilteredList<Ticker> filteredData) {
+        Instant start = Instant.now();
         UnaryOperator<TextFormatter.Change> filter = change -> {
             if (change.getSelection().getStart() == 0 && change.getSelection().getEnd() == 0) return change;
             String newText = change.getControlNewText();
@@ -442,11 +457,15 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
 
         // Bind the filtered list to the ComboBox's items
         cbxTicker.setItems(filteredData);
+        LogUtils.debugDuration(logger, start, "updating the cbxTicker");
     }
 
     private void loadAssetClassesCombobox() {
         if (tickers.isEmpty()) return;
-        Set<String> assetClasses = tickers.keySet();
+        if (assetClasses.isEmpty()) {
+            Set<String> filteredValues = tickers.stream().map(Ticker::getMarket).collect(Collectors.toSet());
+            assetClasses.addAll(filteredValues);
+        }
         cbxAssetClass.getItems().clear();
         cbxAssetClass.getItems().addAll(assetClasses);
     }
@@ -472,9 +491,9 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
     }
 
     private void downloadTickers() {
-        Task<Map<String, Map<String, List<Ticker>>>> task = new Task<>() {
+        Task<Set<Ticker>> task = new Task<>() {
             @Override
-            protected Map<String, Map<String, List<Ticker>>> call() {
+            protected Set<Ticker> call() {
                 try {
                     tickers = api.loadAllTickers(StocksMonitorController.this);
                 } catch (Exception e) {
@@ -527,6 +546,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
 
     @Override
     public void onProgressUpdate(String progress) {
+        logger.debug(progress);
         Platform.runLater(() -> {
             progressLabel.setText(progress);
         });
