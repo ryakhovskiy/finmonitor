@@ -1,7 +1,7 @@
 package org.kr.stocksmonitor.polygon;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -11,13 +11,9 @@ import org.kr.stocksmonitor.config.Tuple2;
 import org.kr.stocksmonitor.exceptions.RestCallException;
 import org.kr.stocksmonitor.utils.RestUtils;
 
-import java.io.*;
-
-import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class PolygonAPI {
     private static final Logger logger = LogManager.getLogger(PolygonAPI.class);
@@ -38,7 +34,7 @@ public class PolygonAPI {
 
     public List<TickerType> loadTickerTypes(String assetClass) throws RestCallException {
         final List<NameValuePair> parameters = List.of(new BasicNameValuePair("asset_class", assetClass));
-        final String response = restUtils.callEndpoint(baseURL, tickerTypeGET, apiKey, parameters);
+        final String response = restUtils.callPolygonEndpoint(baseURL, tickerTypeGET, apiKey, parameters);
         return parseJsonResponseTickerTypes(response);
     }
 
@@ -54,9 +50,9 @@ public class PolygonAPI {
         while (null != nextUrl && !nextUrl.isEmpty()) {
             String response;
             if (tickers.isEmpty()) //first call
-                response = restUtils.callEndpoint(baseURL, tickersGET, apiKey, parameters);
+                response = restUtils.callPolygonEndpoint(baseURL, tickersGET, apiKey, parameters);
             else
-                response = restUtils.callEndpoint(nextUrl, "", apiKey, Collections.emptyList());
+                response = restUtils.callPolygonEndpoint(nextUrl, "", apiKey, Collections.emptyList());
             var res = parseResponseHeader(response);
             nextUrl = res.getFirst();
             var results = res.getSecond();
@@ -89,7 +85,7 @@ public class PolygonAPI {
         String nextUrl = baseURL;
         List<NewsArticle> news = new ArrayList<>();
         while (null != nextUrl && !nextUrl.isEmpty()) {
-            String response = restUtils.callEndpoint(baseURL, tickerNewsGET, apiKey, parameters);
+            String response = restUtils.callPolygonEndpoint(baseURL, tickerNewsGET, apiKey, parameters);
             var res = parseResponseHeader(response);
             nextUrl = res.getFirst();
             var results = res.getSecond();

@@ -1,12 +1,14 @@
 package org.kr.stocksmonitor.utils;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.net.URIBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.kr.stocksmonitor.config.ConfigManager;
@@ -17,7 +19,6 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.http.NameValuePair;
 import org.kr.stocksmonitor.exceptions.RestCallException;
 
 public class RestUtils {
@@ -37,31 +38,51 @@ public class RestUtils {
 
     }
 
-    public String callEndpoint(String host, String endpoint, String apiKey, List<NameValuePair> parameters) throws RestCallException {
+    public String callRestEndpoint(String host, String endpoint, String apiKey, List<NameValuePair> parameters,
+                                   RestEndpointType endpointType) throws RestCallException {
         Instant start = Instant.now();
-        enforceRateLimit();
+        if (endpointType == RestEndpointType.POLYGON)
+            enforceRateLimit();
+        if (endpointType == RestEndpointType.YAHOO)
+            manageYahooCrumbsAndCookies(parameters);
         String result = "";
         HttpGet request = new HttpGet(host + endpoint);
-        URIBuilder builder = new URIBuilder(request.getURI()).addParameters(parameters);
+        URIBuilder builder = null;
+        try {
+            builder = new URIBuilder(request.getUri()).addParameters(parameters);
+        } catch (URISyntaxException e) {
+            throw new RestCallException(e);
+        }
         String url = "";
         if (logger.isDebugEnabled())
             url = builder.toString();
         logger.debug("calling endpoint: {}", url);
-        builder.addParameter("apiKey", apiKey);
+        if (endpointType == RestEndpointType.POLYGON)
+            builder.addParameter("apiKey", apiKey);
+        if (endpointType == RestEndpointType.YAHOO)
+            builder.addParameter("crumb", apiKey);
         try (CloseableHttpClient client = HttpClients.createDefault()) {
-            request.setURI(builder.build());
+            request.setUri(builder.build());
             try (CloseableHttpResponse httpResponse = client.execute(request)) {
                 HttpEntity entity = httpResponse.getEntity();
                 if (entity != null) {
                     result = EntityUtils.toString(entity);
                 }
             }
-        } catch (IOException | URISyntaxException e) {
+        } catch (IOException | URISyntaxException | ParseException e) {
             throw new RestCallException(e);
         }
 
         LogUtils.debugDuration(logger, start, String.format("calling endpoint '%s'", url));
         return result;
+    }
+
+    public String callPolygonEndpoint(String host, String endpoint, String apiKey, List<NameValuePair> parameters) throws RestCallException {
+        return callRestEndpoint(host, endpoint, apiKey, parameters, RestEndpointType.POLYGON);
+    }
+
+    private void manageYahooCrumbsAndCookies(List<NameValuePair> parameters) {
+
     }
 
     private void enforceRateLimit() {
@@ -87,3 +108,4 @@ public class RestUtils {
     }
 
 }
+

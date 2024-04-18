@@ -17,6 +17,10 @@ public class Ticker implements Serializable {
     final String market;
     final String type;
 
+    public Ticker(String ticker) {
+        this(ticker, "", "", "");
+    }
+
     public Ticker(String ticker, String name, String market, String type) {
         this.ticker = ticker;
         this.name = name;

@@ -1,14 +1,11 @@
 package org.kr.stocksmonitor.polygon;
 
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.kr.stocksmonitor.exceptions.RestCallException;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;

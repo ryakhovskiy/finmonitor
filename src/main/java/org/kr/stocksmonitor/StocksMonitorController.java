@@ -19,7 +19,12 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.web.WebEngine;
+import javafx.scene.web.WebView;
 import javafx.util.StringConverter;
+
+import java.net.*;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.kr.stocksmonitor.config.ConfigManager;
@@ -31,7 +36,6 @@ import org.kr.stocksmonitor.utils.FileUtils;
 import org.kr.stocksmonitor.utils.LogUtils;
 
 import java.io.IOException;
-import java.net.URL;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -45,6 +49,9 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
 
     private final PolygonAPI api = new PolygonAPI();
     @FXML public TabPane tabPaneData;
+    @FXML public WebView webView;
+    @FXML public TextField tfURL;
+    @FXML public Button loadUriButton;
 
     private String lastSelectedAsset = "";
     private Set<Ticker> tickers = new HashSet<>();
@@ -69,6 +76,7 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
         initDatePickers();
         initTickersCombobox();
         initTableView();
+        initCookieStore();
     }
 
     private void initTableView() {
@@ -552,8 +560,11 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
         });
     }
 
+    private Map<String, List<HttpCookie>> cookies = new HashMap<>();
+    private Map<String, List<URI>> uris = new HashMap<>();
 
     public void btnLoadDataForAllFavoriteTickersHit(ActionEvent actionEvent) {
+
     }
 
     public void btnRemoveSelectedFavoriteTickersHit(ActionEvent actionEvent) {
@@ -586,6 +597,77 @@ public class StocksMonitorController implements Initializable, PolygonAPI.Progre
     @FXML public TableView<Ticker> tblTickers;
     @FXML public PasswordField tfApiKey;
     @FXML public Tab tabNews;
+
+    private void initCookieStore() {
+        CookieStore cookieStore = new CookieStore() {
+            @Override
+            public void add(URI uri, HttpCookie cookie) {
+                logger.debug("adding cookies for URI: {}; cookie: {}", uri, cookie);
+                List<HttpCookie> cks = cookies.computeIfAbsent(uri.getHost(), _ -> new ArrayList<>());
+                cks.add(cookie);
+                logger.debug("added cookie: {}", cookie);
+
+                List<URI> u = uris.computeIfAbsent(uri.getHost(), _ -> new ArrayList<>());
+                u.add(uri);
+            }
+
+            @Override
+            public List<HttpCookie> get(URI uri) {
+                logger.debug("get cookies for URI: {}", uri);
+                if (uri.getHost().contains("query2."))
+                    return getCookies();
+                return cookies.get(uri.getHost());
+            }
+
+            @Override
+            public List<HttpCookie> getCookies() {
+                logger.debug("getCookies() - all cookies: {}", cookies);
+                return cookies.values().stream().flatMap(List::stream).toList();
+            }
+
+            @Override
+            public List<URI> getURIs() {
+                logger.debug("get all uris: {}", uris);
+                return uris.values().stream().flatMap(List::stream).toList();
+            }
+
+            @Override
+            public boolean remove(URI uri, HttpCookie cookie) {
+                if (cookies.containsKey(uri.getHost())) {
+                    List<HttpCookie> cks = cookies.get(uri.getHost());
+                    boolean removed = cks.remove(cookie);
+                    if (removed)
+                        logger.debug("removed cookies: {}", cookie);
+                    return removed;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean removeAll() {
+                logger.debug("removing all cookies");
+                cookies = new HashMap<>();
+                return false;
+            }
+        };
+        java.net.CookieManager manager = new CookieManager(cookieStore, CookiePolicy.ACCEPT_ALL);
+        java.net.CookieHandler.setDefault(manager);
+
+        logger.debug("cookie store initialized");
+    }
+
+    public void butLoadUriHit(ActionEvent actionEvent) {
+        Platform.runLater(this::btnLoadUriHit);
+    }
+
+    public void btnLoadUriHit() {
+        WebEngine engine = webView.getEngine();
+
+        String url = tfURL.getText();
+        logger.debug("loading url: {}", url);
+        logger.debug("cookies: {}", cookies);
+        engine.load(url);
+    }
 
     public static class TableCellWithImage extends TableCell<NewsArticleFX, NewsArticleFX.ImageLoadingTask> {
         @Override
