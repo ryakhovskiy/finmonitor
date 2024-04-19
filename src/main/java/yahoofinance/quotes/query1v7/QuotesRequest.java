@@ -10,10 +10,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import yahoofinance.Utils;
 import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.HistoricalQuote;
 import yahoofinance.util.RedirectableRequest;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;

@@ -1,0 +1,67 @@
+[
+  {
+    "exchDisp": "NYSE",
+    "exchange": "NYQ",
+    "index": "quotes",
+    "isYahooFinance": true,
+    "longname": "Accenture plc",
+    "quoteType": "EQUITY",
+    "shortname": "Accenture plc",
+    "symbol": "ACN",
+    "typeDisp": "Aktie"
+  },
+  {
+    "exchDisp": "München",
+    "exchange": "MUN",
+    "index": "quotes",
+    "isYahooFinance": true,
+    "longname": "Allianz SE",
+    "quoteType": "EQUITY",
+    "shortname": "ALLIANZ SE",
+    "symbol": "ALV.MU",
+    "typeDisp": "Aktie"
+  },
+  {
+    "exchDisp": "London",
+    "exchange": "LSE",
+    "index": "quotes",
+    "isYahooFinance": true,
+    "longname": "Vanguard FTSE All-World High Dividend Yield UCITS ETF USD Distributing",
+    "quoteType": "ETF",
+    "shortname": "VANGUARD FUNDS PLC VANGUARD FTS",
+    "symbol": "VHYL.L",
+    "typeDisp": "ETF"
+  },
+  {
+    "exchDisp": "London",
+    "exchange": "LSE",
+    "index": "quotes",
+    "isYahooFinance": true,
+    "longname": "Vanguard S&P 500 UCITS ETF",
+    "quoteType": "ETF",
+    "shortname": "VANGUARD FUNDS PLC VANGUARD S&P",
+    "symbol": "VUSA.L",
+    "typeDisp": "ETF"
+  },
+  {
+    "exchDisp": "London",
+    "exchange": "LSE",
+    "index": "quotes",
+    "isYahooFinance": true,
+    "longname": "Xtrackers MSCI World UCITS ETF 1C",
+    "quoteType": "ETF",
+    "shortname": "XTRACKERS (IE) PUBLIC LIMITED C",
+    "symbol": "XDWD.L",
+    "typeDisp": "ETF"
+  },
+  {
+    "exchDisp": "XETRA",
+    "exchange": "GER",
+    "index": "quotes",
+    "isYahooFinance": true,
+    "longname": "iShares STOXX Global Select Dividend 100 UCITS ETF (DE)",
+    "quoteType": "ETF",
+    "shortname": "IS.S.GL.SE.D.100 U.ETF A.",
+    "symbol": "ISPA.DE",
+    "typeDisp": "ETF"
+  }]

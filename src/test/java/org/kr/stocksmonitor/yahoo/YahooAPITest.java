@@ -15,16 +15,24 @@ import yahoofinance.quotes.stock.StockDividend;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 class YahooAPITest {
 
     private static final Logger logger = LogManager.getLogger(YahooAPITest.class);
+
+    @Test
+    public void testGetQuotes() throws IOException {
+        YahooAPI api = YahooAPI.getInstance();
+        List<QuoteItem> items = api.getQuotes("SPY");
+        assertNotNull(items);
+        assertFalse(items.isEmpty());
+    }
 
     @Test
     public void testStockDividend() throws IOException {
